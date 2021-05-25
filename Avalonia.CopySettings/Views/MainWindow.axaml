@@ -1,0 +1,64 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Avalonia.CopySettings.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="Avalonia.CopySettings.Views.MainWindow"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="CopySettings"
+        TransparencyLevelHint="AcrylicBlur"
+        Background="Transparent"
+        WindowStartupLocation="CenterScreen"
+        MinWidth="800" MinHeight="450"
+        Width="800" Height="450">
+
+  <Design.DataContext>
+    <vm:MainWindowViewModel />
+  </Design.DataContext>
+
+  <Panel>
+    <ExperimentalAcrylicBorder IsHitTestVisible="False">
+      <ExperimentalAcrylicBorder.Material>
+        <ExperimentalAcrylicMaterial
+            BackgroundSource="Digger"
+            TintColor="Black"
+            TintOpacity="1"
+            MaterialOpacity="0.65" />
+      </ExperimentalAcrylicBorder.Material>
+    </ExperimentalAcrylicBorder>
+
+    <Panel Margin="40">
+      <DockPanel>
+        <StackPanel Margin="0,0,0,20" DockPanel.Dock="Top">
+          <Button HorizontalAlignment="Right" Command="{Binding FolderDialogCommand}">
+            <PathIcon Data="{StaticResource folder_regular}" />
+          </Button>
+          <TextBox Text="{Binding FolderPathText}" Watermark="Select Folder"></TextBox>
+        </StackPanel>
+        <Grid>
+
+          <ListBox Width="270" Items="{Binding CopyFromCollection}" HorizontalAlignment="Left">
+            <ListBox.ItemTemplate>
+              <DataTemplate>
+                <ListBoxItem Content="{Binding CharacterName}" />
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+
+          <Image HorizontalAlignment="Center" VerticalAlignment="Top" Margin="25" Height="64" Width="64" Source="/Assets/charph.png" />
+
+          <Button  Command="{Binding CopyCommand}" Content="Copy" HorizontalAlignment="Center" />
+
+          <ListBox Width="270" Items="{Binding CopyToCollection}" HorizontalAlignment="Right">
+            <ListBox.ItemTemplate>
+              <DataTemplate>
+                <ListBoxItem Content="{Binding CharacterName}" />
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </Grid>
+      </DockPanel>
+    </Panel>
+  </Panel>
+</Window>
