@@ -34,11 +34,11 @@
           <Button HorizontalAlignment="Right" Command="{Binding FolderDialogCommand}">
             <PathIcon Data="{StaticResource folder_regular}" />
           </Button>
-          <TextBox Text="{Binding FolderPathText}" Watermark="Select Folder"></TextBox>
+          <TextBox Text="{Binding FolderPathText}" Watermark="Select Eve Settings Folder"></TextBox>
         </StackPanel>
         <Grid>
 
-          <ListBox Width="270" Items="{Binding CopyFromCollection}" HorizontalAlignment="Left">
+          <ListBox Name="CopyFromListBox" MinWidth="270" Items="{Binding CopyFromCollection}"  SelectedItem="CopyFromItem" SelectionMode="Single" HorizontalAlignment="Left">
             <ListBox.ItemTemplate>
               <DataTemplate>
                 <ListBoxItem Content="{Binding CharacterName}" />
@@ -48,9 +48,11 @@
 
           <Image HorizontalAlignment="Center" VerticalAlignment="Top" Margin="25" Height="64" Width="64" Source="/Assets/charph.png" />
 
+          <TextBlock Text="{Binding ElementName=CopyFromListBox, Path=SelectedItem.CharacterName, Mode=OneWay, FallbackValue=Character}" HorizontalAlignment="Center" />
+
           <Button  Command="{Binding CopyCommand}" Content="Copy" HorizontalAlignment="Center" />
 
-          <ListBox Width="270" Items="{Binding CopyToCollection}" HorizontalAlignment="Right">
+          <ListBox Width="270" Items="{Binding CopyToCollection}" SelectionMode="Multiple" HorizontalAlignment="Right">
             <ListBox.ItemTemplate>
               <DataTemplate>
                 <ListBoxItem Content="{Binding CharacterName}" />

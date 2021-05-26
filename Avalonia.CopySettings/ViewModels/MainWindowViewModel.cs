@@ -15,8 +15,12 @@ namespace Avalonia.CopySettings.ViewModels
 {
     public class MainWindowViewModel : ViewModelBase
     {
-        public ObservableCollection<Character> CopyFromCollection { get; set; } = new ObservableCollection<Character>();
-        public ObservableCollection<Character> CopyToCollection { get; set; } = new ObservableCollection<Character>();
+        public ICommand FolderDialogCommand { get; }
+        public ICommand CopyCommand { get; }
+
+        private ObservableCollection<Character> CopyFromCollection { get; set; } = new ObservableCollection<Character>();
+        private ObservableCollection<Character> CopyToCollection { get; set; } = new ObservableCollection<Character>();
+
         private string? backupPath;
 
         private string? folderPathText;
@@ -155,8 +159,5 @@ namespace Avalonia.CopySettings.ViewModels
             string characterID = filePathToTrim.Trim('c', 'o', 'r', 'e', '_', 'h', 'a', 'r', '.', 'd', 'a', 't');
             return characterID;
         }
-
-        public ICommand FolderDialogCommand { get; }
-        public ICommand CopyCommand { get; }
     }
 }
