@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="Avalonia.CopySettings.Views.MainWindow"
-        Icon="/Assets/avalonia-logo.ico"
+        Icon="/Assets/cs-logo.ico"
         Title="CopySettings"
         TransparencyLevelHint="AcrylicBlur"
         Background="Transparent"
@@ -28,34 +28,35 @@
       </ExperimentalAcrylicBorder.Material>
     </ExperimentalAcrylicBorder>
 
-    <Panel Margin="40">
+    <Panel Margin="40,20">
       <DockPanel>
         <StackPanel Margin="0,0,0,20" DockPanel.Dock="Top">
           <Button HorizontalAlignment="Right" Command="{Binding FolderDialogCommand}">
             <PathIcon Data="{StaticResource folder_regular}" />
           </Button>
-          <TextBox Text="{Binding FolderPathText}" Watermark="Select Eve Settings Folder"></TextBox>
+          <TextBox FontFamily="Shentox 2" Text="{Binding FolderPathText}" Watermark="Select Eve Settings Folder"></TextBox>
         </StackPanel>
         <Grid>
 
-          <ListBox Name="CopyFromListBox" MinWidth="270" Items="{Binding CopyFromCollection}"  SelectedItem="CopyFromItem" SelectionMode="Single" HorizontalAlignment="Left">
+          <ListBox x:Name="CopyFromListBox" MinWidth="270" Items="{Binding CopyFromCollection}" SelectedItem="{Binding FromSelectedItem}" SelectionMode="Single" HorizontalAlignment="Left">
             <ListBox.ItemTemplate>
               <DataTemplate>
-                <ListBoxItem Content="{Binding CharacterName}" />
+                <ListBoxItem FontFamily="Shentox 2" Content="{Binding CharacterName}" />
               </DataTemplate>
             </ListBox.ItemTemplate>
           </ListBox>
+          <Panel HorizontalAlignment="Center" VerticalAlignment="Top" Margin="25" Height="64" Width="64">
+            <Image Height="64" Width="64" Source="{Binding ElementName=CopyFromListBox, Path=SelectedItem.CharacterPotrait, FallbackValue={StaticResource person_regular}}" />
+          </Panel>
 
-          <Image HorizontalAlignment="Center" VerticalAlignment="Top" Margin="25" Height="64" Width="64" Source="/Assets/charph.png" />
+          <TextBlock FontFamily="Shentox 2" Text="{Binding ElementName=CopyFromListBox, Path=SelectedItem.CharacterName, Mode=OneWay, FallbackValue=Character}" HorizontalAlignment="Center" />
 
-          <TextBlock Text="{Binding ElementName=CopyFromListBox, Path=SelectedItem.CharacterName, Mode=OneWay, FallbackValue=Character}" HorizontalAlignment="Center" />
+          <Button FontFamily="Shentox 2" Command="{Binding CopyCommand}" Content="Copy" HorizontalAlignment="Center" />
 
-          <Button  Command="{Binding CopyCommand}" Content="Copy" HorizontalAlignment="Center" />
-
-          <ListBox Width="270" Items="{Binding CopyToCollection}" SelectionMode="Multiple" HorizontalAlignment="Right">
+          <ListBox x:Name="CopyToListBox" MinWidth="270" Items="{Binding CopyToCollection}" SelectedItems="{Binding ToSelectedItems, Mode=TwoWay}" SelectionMode="Multiple, Toggle" HorizontalAlignment="Right">
             <ListBox.ItemTemplate>
               <DataTemplate>
-                <ListBoxItem Content="{Binding CharacterName}" />
+                <ListBoxItem FontFamily="Shentox 2" Content="{Binding CharacterName}" />
               </DataTemplate>
             </ListBox.ItemTemplate>
           </ListBox>

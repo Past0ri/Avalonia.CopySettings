@@ -1,13 +1,16 @@
+using Avalonia.Collections;
 using Avalonia.Controls;
 using Avalonia.CopySettings.Models;
 using Avalonia.CopySettings.Views;
+using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using Newtonsoft.Json;
 using ReactiveUI;
 using System;
-using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 using System.Windows.Input;
 
@@ -15,21 +18,15 @@ namespace Avalonia.CopySettings.ViewModels
 {
     public class MainWindowViewModel : ViewModelBase
     {
-        public ICommand FolderDialogCommand { get; }
-        public ICommand CopyCommand { get; }
-
-        private ObservableCollection<Character> CopyFromCollection { get; set; } = new ObservableCollection<Character>();
-        private ObservableCollection<Character> CopyToCollection { get; set; } = new ObservableCollection<Character>();
-
+        private static readonly HttpClient s_httpClient = new();
         private string? backupPath;
-
         private string? folderPathText;
 
         public MainWindowViewModel()
         {
-            CopyCommand = ReactiveCommand.Create(() =>
+            CopyCommand = ReactiveCommand.Create(async () =>
             {
-                // Code here will be executed when the button is clicked.
+                await Task.Run(() => CopyCharacterFiles());
             });
 
             FolderDialogCommand = ReactiveCommand.Create(async () =>
@@ -45,41 +42,76 @@ namespace Avalonia.CopySettings.ViewModels
             });
         }
 
+        public ICommand CopyCommand { get; }
+        public ICommand FolderDialogCommand { get; }
+
         public string? FolderPathText
         {
             get => folderPathText;
             set => this.RaiseAndSetIfChanged(ref folderPathText, value);
         }
 
-        public string ResolvePath()
+        public AvaloniaList<object>? ToSelectedItems { get; set; }
+        private AvaloniaList<Character> CopyFromCollection { get; set; } = new AvaloniaList<Character>();
+        private AvaloniaList<Character> CopyToCollection { get; set; } = new AvaloniaList<Character>();
+        private Character? FromSelectedItem { get; set; }
+
+        public static async Task<Bitmap> LoadPotrait(string characterid)
         {
-            //Navigates to ccp\eve in localappdata
-            string localData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            string eveFolder = $"{localData}\\CCP\\EVE\\";
-            string[] eveFolderList = Directory.GetDirectories(eveFolder);
-            foreach (string eveFolderItem in eveFolderList)
+            await using var imageStream = await LoadPotraitBitmapAsync(characterid);
+            return await Task.Run(() => Bitmap.DecodeToWidth(imageStream, 64));
+        }
+
+        public static async Task<Stream> LoadPotraitBitmapAsync(string characterid)
+        {
+            var data = await s_httpClient.GetByteArrayAsync(ResolveUrl(characterid));
+            return new MemoryStream(data);
+        }
+
+        public void CopyCharacterFiles()
+        {
+            //Copy character files
+            string dateNow = DateTime.Now.ToString("h-mm-dd-MM-yy");
+            string settingsBackup = $"settings_Backup-{dateNow}";
+            DirectoryInfo? backUpDirectory = Directory.CreateDirectory(Path.Combine(path1: backupPath,
+                                                                                    path2: settingsBackup));
+            foreach (Character? item in ToSelectedItems)
             {
-                //Looks for tranquility foldername varies by eve install location
-                if (eveFolderItem.EndsWith("_eve_sharedcache_tq_tranquility"))
+                Character? character = FromSelectedItem;
+                if (character.CharacterName != item.CharacterName)
                 {
-                    string tranqFolder = System.IO.Path.Combine(eveFolder, eveFolderItem);
-                    string[] tranqFolderList = Directory.GetDirectories(tranqFolder);
-                    backupPath = tranqFolder;
-                    foreach (string tranqFolderItem in tranqFolderList)
+                    string? fileName = Path.GetFileName(item.CharacterFilePath);
+                    string? backupFilePath = System.IO.Path.Combine(backUpDirectory.FullName, fileName);
+                    try
                     {
-                        //Looks for settings_Default folder
-                        if (tranqFolderItem.EndsWith("Default"))
-                        {
-                            string settingsPath = System.IO.Path.Combine(tranqFolder, tranqFolderItem);
-                            return settingsPath;
-                        }
+                        File.Copy(item.CharacterFilePath,
+                                  backupFilePath,
+                                  true);
                     }
-                    //If default forlder not found direct to tranq folder
-                    return tranqFolder;
+                    catch (IOException copyError)
+                    {
+                        Debug.WriteLine(copyError.Message);
+                    }
+                    try
+                    {
+                        File.Copy(character.CharacterFilePath, item.CharacterFilePath, true);
+                    }
+                    catch (IOException copyError)
+                    {
+                        Debug.WriteLine(copyError.Message);
+                    }
+                    Debug.WriteLine($"Name:{character.CharacterName} ID:{character.CharacterId} copied to Name:{item.CharacterName} ID:{item.CharacterId}");
+                    Debug.WriteLine($"From {character.CharacterFilePath}");
+                    Debug.WriteLine($"To {item.CharacterFilePath}");
+                    Debug.WriteLine("------------------------------------------------------------------");
+                }
+                else
+                {
+                    Debug.WriteLine($"Passed {item.CharacterName}");
+                    Debug.WriteLine("------------------------------------------------------------------");
+                    continue;
                 }
             }
-            //If neither default or tranq folder not found return eve folder
-            return eveFolder;
         }
 
         public async void GetFiles(string dir)
@@ -106,35 +138,37 @@ namespace Avalonia.CopySettings.ViewModels
             });
         }
 
-        private void GetCharacter(string characterid, string characterfilepath)
+        public string ResolvePath()
         {
-            dynamic? json = JsonHandler($"https://esi.evetech.net/latest/characters/{characterid}/?datasource=tranquility");
-            string? characterName = json.name;
-            Character character = new()
+            //Navigates to ccp\eve in localappdata
+            string localData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            string eveFolder = $"{localData}\\CCP\\EVE\\";
+            string[] eveFolderList = Directory.GetDirectories(eveFolder);
+            foreach (string eveFolderItem in eveFolderList)
             {
-                CharacterName = characterName,
-                CharacterId = characterid,
-                CharacterFilePath = characterfilepath
-            };
-            AddCharacter(character);
-        }
-
-        private void AddCharacter(Character character)
-        {
-            Dispatcher.UIThread.InvokeAsync(() =>
-            {
-                CopyFromCollection.Add(character);
-                CopyToCollection.Add(character);
-            });
-        }
-
-        private void ClearCollection()
-        {
-            Dispatcher.UIThread.InvokeAsync(() =>
-            {
-                CopyFromCollection.Clear();
-                CopyToCollection.Clear();
-            });
+                //Looks for tranquility foldername varies by eve install location
+                if (eveFolderItem.EndsWith("_eve_sharedcache_tq_tranquility"))
+                {
+                    string tranqFolder = Path.Combine(eveFolder,
+                                                      eveFolderItem);
+                    string[] tranqFolderList = Directory.GetDirectories(tranqFolder);
+                    backupPath = tranqFolder;
+                    foreach (string tranqFolderItem in tranqFolderList)
+                    {
+                        //Looks for settings_Default folder
+                        if (tranqFolderItem.EndsWith("Default"))
+                        {
+                            string settingsPath = Path.Combine(tranqFolder,
+                                                               tranqFolderItem);
+                            return settingsPath;
+                        }
+                    }
+                    //If default forlder not found direct to tranq folder
+                    return tranqFolder;
+                }
+            }
+            //If neither default or tranq folder not found return eve folder
+            return eveFolder;
         }
 
         private static dynamic? JsonHandler(string url)
@@ -158,6 +192,45 @@ namespace Avalonia.CopySettings.ViewModels
             string filePathToTrim = System.IO.Path.GetFileName(filePath);
             string characterID = filePathToTrim.Trim('c', 'o', 'r', 'e', '_', 'h', 'a', 'r', '.', 'd', 'a', 't');
             return characterID;
+        }
+
+        private static string? ResolveUrl(string characterId)
+        {
+            dynamic? json = JsonHandler($"https://esi.evetech.net/latest/characters/{characterId}/portrait/?datasource=tranquility");
+            string? purl = json.px64x64;
+            return purl;
+        }
+
+        private void AddCharacter(Character character)
+        {
+            Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                CopyFromCollection.Add(character);
+                CopyToCollection.Add(character);
+            });
+        }
+
+        private void ClearCollection()
+        {
+            Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                CopyFromCollection.Clear();
+                CopyToCollection.Clear();
+            });
+        }
+
+        private async void GetCharacter(string characterid, string characterfilepath)
+        {
+            dynamic? json = JsonHandler($"https://esi.evetech.net/latest/characters/{characterid}/?datasource=tranquility");
+            string characterName = json.name;
+            Character character = new()
+            {
+                CharacterName = characterName,
+                CharacterId = characterid,
+                CharacterFilePath = characterfilepath,
+                CharacterPotrait = await LoadPotrait(characterid)
+            };
+            AddCharacter(character);
         }
     }
 }
