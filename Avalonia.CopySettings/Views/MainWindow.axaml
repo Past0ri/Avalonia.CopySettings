@@ -41,15 +41,15 @@
           <ListBox x:Name="CopyFromListBox" MinWidth="270" Items="{Binding CopyFromCollection}" SelectedItem="{Binding FromSelectedItem}" SelectionMode="Single" HorizontalAlignment="Left">
             <ListBox.ItemTemplate>
               <DataTemplate>
-                <ListBoxItem FontFamily="Shentox 2" Content="{Binding CharacterName}" />
+                <TextBlock FontFamily="Shentox 2" Text="{Binding CharacterName}" />
               </DataTemplate>
             </ListBox.ItemTemplate>
           </ListBox>
           <Panel HorizontalAlignment="Center" VerticalAlignment="Top" Margin="25" Height="64" Width="64">
-            <Image Height="64" Width="64" Source="{Binding ElementName=CopyFromListBox, Path=SelectedItem.CharacterPotrait, FallbackValue={StaticResource person_regular}}" />
+            <Image Height="64" Width="64" Source="{Binding ElementName=CopyFromListBox, Path=SelectedItem.CharacterPotrait }" />
           </Panel>
 
-          <TextBlock FontFamily="Shentox 2" Text="{Binding ElementName=CopyFromListBox, Path=SelectedItem.CharacterName, Mode=OneWay, FallbackValue=Character}" HorizontalAlignment="Center" />
+          <TextBlock FontFamily="Shentox 2" Text="{Binding FromSelectedItem, Mode=OneWay, FallbackValue=Character}" HorizontalAlignment="Center" />
 
           <Button FontFamily="Shentox 2" Command="{Binding CopyCommand}" Content="Copy" HorizontalAlignment="Center" />
 
