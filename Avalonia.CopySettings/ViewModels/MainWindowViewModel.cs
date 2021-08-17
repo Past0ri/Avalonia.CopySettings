@@ -9,6 +9,7 @@ using ReactiveUI;
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -73,44 +74,51 @@ namespace Avalonia.CopySettings.ViewModels
             //Copy character files
             string dateNow = DateTime.Now.ToString("h-mm-dd-MM-yy");
             string settingsBackup = $"settings_Backup-{dateNow}";
-            DirectoryInfo? backUpDirectory = Directory.CreateDirectory(Path.Combine(path1: backupPath,
-                                                                                    path2: settingsBackup));
-            foreach (Character? item in ToSelectedItems)
+            if (backupPath != null)
             {
-                Character? character = FromSelectedItem;
-                if (character.CharacterName != item.CharacterName)
-                {
-                    string? fileName = Path.GetFileName(item.CharacterFilePath);
-                    string? backupFilePath = System.IO.Path.Combine(backUpDirectory.FullName, fileName);
-                    try
+                DirectoryInfo? backUpDirectory = Directory.CreateDirectory(Path.Combine(path1: backupPath,
+                                                                                        path2: settingsBackup));
+                if (ToSelectedItems != null)
+                    foreach (var (item, character) in from Character? item in ToSelectedItems
+                                                      let character = FromSelectedItem
+                                                      select (item, character))
                     {
-                        File.Copy(item.CharacterFilePath,
-                                  backupFilePath,
-                                  true);
+                        if (character.CharacterName != item.CharacterName)
+                        {
+                            string? fileName = Path.GetFileName(item.CharacterFilePath);
+                            string? backupFilePath = System.IO.Path.Combine(backUpDirectory.FullName, fileName);
+                            try
+                            {
+                                if (item.CharacterFilePath != null)
+                                    File.Copy(sourceFileName: item.CharacterFilePath,
+                                              backupFilePath,
+                                              true);
+                            }
+                            catch (IOException copyError)
+                            {
+                                Debug.WriteLine(copyError.Message);
+                            }
+                            try
+                            {
+                                if (character.CharacterFilePath != null && item.CharacterFilePath != null)
+                                    File.Copy(character.CharacterFilePath, item.CharacterFilePath, true);
+                            }
+                            catch (IOException copyError)
+                            {
+                                Debug.WriteLine(copyError.Message);
+                            }
+                            Debug.WriteLine($"Name:{character.CharacterName} ID:{character.CharacterId} copied to Name:{item.CharacterName} ID:{item.CharacterId}");
+                            Debug.WriteLine($"From {character.CharacterFilePath}");
+                            Debug.WriteLine($"To {item.CharacterFilePath}");
+                            Debug.WriteLine("------------------------------------------------------------------");
+                        }
+                        else
+                        {
+                            Debug.WriteLine($"Passed {item.CharacterName}");
+                            Debug.WriteLine("------------------------------------------------------------------");
+                            continue;
+                        }
                     }
-                    catch (IOException copyError)
-                    {
-                        Debug.WriteLine(copyError.Message);
-                    }
-                    try
-                    {
-                        File.Copy(character.CharacterFilePath, item.CharacterFilePath, true);
-                    }
-                    catch (IOException copyError)
-                    {
-                        Debug.WriteLine(copyError.Message);
-                    }
-                    Debug.WriteLine($"Name:{character.CharacterName} ID:{character.CharacterId} copied to Name:{item.CharacterName} ID:{item.CharacterId}");
-                    Debug.WriteLine($"From {character.CharacterFilePath}");
-                    Debug.WriteLine($"To {item.CharacterFilePath}");
-                    Debug.WriteLine("------------------------------------------------------------------");
-                }
-                else
-                {
-                    Debug.WriteLine($"Passed {item.CharacterName}");
-                    Debug.WriteLine("------------------------------------------------------------------");
-                    continue;
-                }
             }
         }
 
@@ -222,7 +230,7 @@ namespace Avalonia.CopySettings.ViewModels
         private async void GetCharacter(string characterid, string characterfilepath)
         {
             dynamic? json = JsonHandler($"https://esi.evetech.net/latest/characters/{characterid}/?datasource=tranquility");
-            string characterName = json.name;
+            string? characterName = json.name;
             Character character = new()
             {
                 CharacterName = characterName,
